@@ -1,4 +1,4 @@
-module Component3 exposing (Model, Msg, init, update, view)
+module Component3 exposing (Model, Msg, Notification(..), init, update, view)
 
 import Html as H exposing (Html, Attribute)
 import Html.Attributes as HA
@@ -19,14 +19,18 @@ type Msg
     | Increment
 
 
-update : Msg -> Model -> ( Model, Cmd Msg, Bool )
+type Notification
+    = Notifying
+
+
+update : Msg -> Model -> ( Model, Cmd Msg, Maybe Notification )
 update msg model =
     case msg of
         Increment ->
-            ( model + 1, Cmd.none, False )
+            ( model + 1, Cmd.none, Nothing )
 
         Notify ->
-            ( model, Cmd.none, True )
+            ( model, Cmd.none, Just Notifying )
 
 
 view : Model -> Html Msg

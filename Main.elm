@@ -65,7 +65,7 @@ update msg model =
     case msg |> Debug.log "msg" of
         -- Inspect component messages and act on Notify. The component's
         -- messages are defined with a nested Local type for messages handled
-        -- only by the component.
+        -- by the component.
         C1Msg c1Msg ->
             case c1Msg of
                 C1.Notify ->
@@ -94,15 +94,19 @@ update msg model =
                     in
                         { model | component2 = c2model } ! [ Cmd.map C2Msg c2cmd ]
 
-        -- Component uses third element of return tuple from update to indicate
-        -- that it is notifying.
+        -- Component uses third element of return tuple from update to pass back 
+        -- notification.
         C3Msg c3Msg ->
             let
-                ( c3model, c3cmd, notified ) =
+                ( c3model, c3cmd, notification ) =
                     C3.update c3Msg model.component3
 
                 notified' =
-                    notified `xor` model.notified3
+                    case notification of
+                        Just C3.Notifying ->
+                            not model.notified3
+                        Nothing ->
+                            model.notified3
             in
                 ( { model | component3 = c3model, notified3 = notified' }, Cmd.map C3Msg c3cmd )
 
