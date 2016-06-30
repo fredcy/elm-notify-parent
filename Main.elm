@@ -1,5 +1,20 @@
 module Main exposing (main)
 
+{-| Try several different approaches to having a component notify its parent of
+an event. This Main module is the parent and the several Component* modules show
+the several variations.
+
+Each component implements a counter that can be incremented and displayed, with
+the parent providing only the usual opaque TEA wiring. Each component also
+implements a "notify" button that is to report a Notify event to the
+parent. This notification is where we try several different approached. When it
+is notified (through some varying means) we have the parent just toggle a
+'notified*' field corresponding the component and have the parent display the
+component view differently based on that field. (A more likely use would be
+something like a "delete me" button in the component which notifies the parent
+to remove the component from the parent's model.)
+-}
+
 import Html
 import Html.App
 import Html.Attributes as HA
@@ -48,6 +63,9 @@ init =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg |> Debug.log "msg" of
+        -- Inspect component messages and act on Notify. The component's
+        -- messages are defined with a nested Local type for messages handled
+        -- only by the component.
         Component1Msg c1Msg ->
             case c1Msg of
                 Component1.Notify ->
@@ -60,6 +78,10 @@ update msg model =
                     in
                         { model | component1 = c1model } ! [ Cmd.map Component1Msg c1cmd ]
 
+        -- Inspect component message and act on Notify. Unlike just above, all
+        -- the component's messages are in a single union type. Only Notify is
+        -- exposed. We don't pass Notify back down to the component (but its
+        -- update function will have to account for it anyway).
         Component2Msg c2Msg ->
             case c2Msg of
                 Component2.Notify ->
@@ -72,29 +94,28 @@ update msg model =
                     in
                         { model | component2 = c2model } ! [ Cmd.map Component2Msg c2cmd ]
 
+        -- Component uses third element of return tuple from update to indicate
+        -- that it is notifying.
         Component3Msg c3Msg ->
             let
                 ( c3model, c3cmd, notified ) =
                     Component3.update c3Msg model.component3
 
                 notified' =
-                    if notified then
-                        not model.notified3
-                    else
-                        model.notified3
+                    notified `xor` model.notified3
             in
                 ( { model | component3 = c3model, notified3 = notified' }, Cmd.map Component3Msg c3cmd )
 
+        -- Component exposes a `notifying` value that indicates whether it is
+        -- notifying. We therefore need to update the component to clear the
+        -- notification from the component itself once we've acted on it.
         Component4Msg c4Msg ->
             let
                 ( c4model, c4cmd ) =
                     Component4.update c4Msg model.component4
 
                 notified' =
-                    if Component4.notifying c4model then
-                        not model.notified4
-                    else
-                        model.notified4
+                    Component4.notifying c4model `xor` model.notified4
 
                 ( c4model', c4cmd' ) =
                     if Component4.notifying c4model then
@@ -102,8 +123,9 @@ update msg model =
                     else
                         ( c4model, Cmd.none )
             in
-                ( { model | component4 = c4model', notified4 = notified' },
-                      Cmd.batch [ Cmd.map Component4Msg c4cmd, Cmd.map Component4Msg c4cmd' ] )
+                ( { model | component4 = c4model', notified4 = notified' }
+                , Cmd.batch [ c4cmd, c4cmd' ] |> Cmd.map Component4Msg
+                )
 
 
 view : Model -> Html.Html Msg

@@ -44,7 +44,7 @@ view : Model -> Html Msg
 view model =
     H.div []
         [ H.button [ HE.onClick Increment ] [ H.text "+" ]
-        , H.div [ countStyle ] [ H.text (toString model) ]
+        , H.div [ countStyle ] [ H.text (toString model.count) ]
         , H.button [ HE.onClick Notify ] [ H.text "Notify" ]
         ]
 
